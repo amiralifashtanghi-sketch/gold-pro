@@ -35,6 +35,7 @@ class GoldAccountingPro {
         register_activation_hook(__FILE__, array($this, 'activate'));
         register_deactivation_hook(__FILE__, array($this, 'deactivate'));
         
+        add_action('plugins_loaded', array($this, 'check_database_version'));
         add_action('plugins_loaded', array($this, 'load_textdomain'));
         add_action('init', array($this, 'register_custom_post_types'));
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
@@ -103,6 +104,13 @@ class GoldAccountingPro {
     
     public function load_textdomain() {
         load_plugin_textdomain('gold-accounting-pro', false, dirname(plugin_basename(__FILE__)) . '/languages');
+    }
+    public function check_database_version() {
+        $current_db_version = get_option('gcg_db_version', '1.0.0');
+        if (version_compare($current_db_version, '4.1.2', '<')) {
+            $this->create_database_tables();
+            update_option('gcg_db_version', '4.1.2');
+        }
     }
     public function register_custom_post_types() {
         register_post_type('gcg_invoice', array(
@@ -294,8 +302,6 @@ class GoldAccountingPro {
         foreach ($tables as $table_sql) {
             dbDelta($table_sql);
         }
-        
-        update_option('gcg_db_version', '4.1.2');
     }
     public function enqueue_scripts() {
         global $post;
